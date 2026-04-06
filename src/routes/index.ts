@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
-import todoRoute from "./todo.js";
-import authRoute from "./auth.js";
+import todoRoute from "./todo.router.js";
+import authRoute from "./auth.router.js";
 import userRoute from "./user.js";
 
 const router = Router();

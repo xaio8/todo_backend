@@ -25,6 +25,7 @@ export const users = pgTable("users", {
   email: varchar("email", { length: 255 }).notNull(),
   password: varchar("password").notNull(),
   role: userRoleEnum("role").default("user"),
+  refreshToken: text("refreshToken"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -47,13 +48,11 @@ export const todos = pgTable(
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow(),
   },
-  (table) => {
-    return {
-      userIdx: index("user_idx").on(table.userId),
-      scheduleIdx: index("schedule_idx").on(table.scheduledAt),
-      dueIdx: index("due_idx").on(table.dueDate),
-    };
-  },
+  (table) => [
+    index("user_idx").on(table.userId),
+    index("schedule_idx").on(table.scheduledAt),
+    index("due_idx").on(table.dueDate),
+  ],
 );
 
 //reminders tables (options) for notification

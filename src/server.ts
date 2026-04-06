@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import router from "./routes/index.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { checkConnection } from "./db/index.js";
+import adminRoute from "./routes/admin.router.js";
 
 dotenv.config();
 
@@ -19,7 +20,11 @@ app.use(bodyParser.json());
 app.use(cors());
 app.use(cookieParser());
 
+// user route
 app.use(api, router);
+
+// admin route
+app.use(`${api}/admin`, adminRoute);
 
 //global error handler
 app.use(errorHandler);
