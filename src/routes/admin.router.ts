@@ -4,12 +4,14 @@ import {
   roleBasedAccess,
 } from "../middleware/protectedRoute.js";
 import * as todoController from "../controller/todo.controller.js";
+import * as userController from "../controller/user.controller.js";
 
 const adminRoute = Router();
 
 adminRoute.use(protectedRoute);
 adminRoute.use(roleBasedAccess("admin"));
 
-adminRoute.use("/todos", todoController.getAllTodosByAdmin);
+adminRoute.get("/todos", todoController.getAllTodosByAdmin);
+adminRoute.get("/users", userController.getAllUser);
 
 export default adminRoute;
