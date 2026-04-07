@@ -1,7 +1,6 @@
 import { count, desc, eq } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { userRoleEnum, users } from "../db/schema.js";
-import { string } from "zod";
 import { SafeUser } from "../types/index.js";
 
 export class UserService {

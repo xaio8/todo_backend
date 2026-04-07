@@ -10,7 +10,7 @@ import { ZodError } from "zod/v3";
 import { setRefreshTokenCookies } from "../utils/cookiesHelper.js";
 import jwt from "jsonwebtoken";
 import { AppError } from "../utils/AppError.js";
-import { sendVerificationEmail } from "../utils/mailHelper.js";
+// import { sendVerificationEmail } from "../utils/mailHelper.js";
 
 const loginSchema = z.object({
   email: z.email("Invalid email format").trim(),
