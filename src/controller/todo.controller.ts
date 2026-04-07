@@ -50,19 +50,26 @@ export const getAllTodos = async (
   try {
     const userId = req.user?.id;
 
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+
     if (!userId) {
       return next(new AppError("User ID is required to fetch todos", 400));
     }
 
-    const userTodos = await db
-      .select()
-      .from(todos)
-      .where(eq(todos.userId, userId as string));
+    const result = await TodoService.getUserTodos(
+      userId as string,
+      page,
+      limit,
+    );
 
     res.status(200).json({
       con: true,
       message: "Todos fetch successful",
-      data: userTodos,
+      data: {
+        todos: result.todos,
+        pagination: result.meta,
+      },
     });
   } catch (error) {
     next(error);

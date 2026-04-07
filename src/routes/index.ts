@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import todoRoute from "./todo.router.js";
 import authRoute from "./auth.router.js";
+import userRoute from "./user.router.js";
 
 const router = Router();
 
@@ -11,5 +12,6 @@ router.get("/health", (req: Request, res: Response) => {
 
 router.use("/auth", authRoute);
 router.use("/todos", todoRoute);
+router.use("/users", userRoute);
 
 export default router;

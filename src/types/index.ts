@@ -7,7 +7,7 @@ export type Reminder = typeof reminders.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type NewTodo = typeof users.$inferInsert;
 
-export type SafeUser = Omit<User, "password">;
+export type SafeUser = Omit<User, "password" | "refreshToken">;
 
 export interface ApiResponse<T> {
   con: boolean;

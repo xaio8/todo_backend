@@ -13,10 +13,12 @@ export const protectedRoute = async (
   next: NextFunction,
 ) => {
   try {
-    const token = req.headers.authorization?.split(" ")[1];
-    if (!token) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith("Bearer ")) {
       return next(new AppError("Unauthorized access, token missing", 401));
     }
+
+    const token = authHeader.split(" ")[1];
 
     const decoded = jwt.verify(
       token,
@@ -36,10 +38,14 @@ export const protectedRoute = async (
     if (error instanceof jwt.TokenExpiredError) {
       return next(new AppError("Token expired", 401));
     }
+    if (error instanceof jwt.JsonWebTokenError) {
+      return next(new AppError("Invalid token", 401));
+    }
     return next(error);
   }
 };
 
+//! Role based Access
 export const roleBasedAccess = (...allowedRoles: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user || !allowedRoles.includes(req.user.role)) {

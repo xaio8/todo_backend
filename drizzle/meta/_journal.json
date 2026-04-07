@@ -22,6 +22,27 @@
       "when": 1775463584614,
       "tag": "0002_abnormal_photon",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1775532708197,
+      "tag": "0003_black_marvex",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1775535828550,
+      "tag": "0004_fast_raider",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1775537923527,
+      "tag": "0005_brave_mongoose",
+      "breakpoints": true
     }
   ]
 }

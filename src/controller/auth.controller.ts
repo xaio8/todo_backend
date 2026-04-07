@@ -10,6 +10,7 @@ import { ZodError } from "zod/v3";
 import { setRefreshTokenCookies } from "../utils/cookiesHelper.js";
 import jwt from "jsonwebtoken";
 import { AppError } from "../utils/AppError.js";
+import { sendVerificationEmail } from "../utils/mailHelper.js";
 
 const loginSchema = z.object({
   email: z.email("Invalid email format").trim(),
@@ -22,7 +23,7 @@ const loginSchema = z.object({
 const signUpSchema = z
   .object({
     name: z.string().max(50),
-    email: z.email("Invalid email format").trim(),
+    email: z.email("Please enter a valid email address").trim(),
     password: z
       .string()
       .min(6, " password must be at least 6 characters")
@@ -56,6 +57,11 @@ export const loginUser = async (
     if (!user) {
       return next(new AppError("Invalid Credentials", 401));
     }
+
+    //todo comment out after fix email service
+    // if (!user.isVerified) {
+    //   return next(new AppError("Please verify your email first", 403));
+    // }
 
     // match password
     const isMatch = await bcrypt.compare(password, user.password);
@@ -121,10 +127,30 @@ export const signUpUser = async (
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // const verifyToken = crypto.randomUUID().toString();
+    // const verifyTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); //! 1Hour
+
     const [newUser] = await db
       .insert(users)
-      .values({ name, email, password: hashedPassword })
+      .values({
+        name,
+        email,
+        password: hashedPassword,
+        // verifyToken,
+        // verifyTokenExpiry,
+        isVerified: true, //todo change false after fix
+      })
       .returning();
+
+    // const verifyLink = `${process.env.CLIENT_URL}/verify-email?token=${verifyToken}`;
+
+    // // ✉️ send email
+    // await sendVerificationEmail(email, verifyLink);
+
+    // return res.status(201).json({
+    //   con: true,
+    //   message: "Signup successful. Please verify your email.",
+    // });
 
     const { accessToken, refreshToken } = await generateToken({
       id: newUser.id,
@@ -162,6 +188,50 @@ export const signUpUser = async (
         })),
       });
     }
+    next(error);
+  }
+};
+
+// verify email
+export const verifyEmail = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { token } = req.query;
+
+    if (!token) {
+      return next(new AppError("Invalid token", 400));
+    }
+
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.verifyToken, token as string));
+
+    if (!user) {
+      return next(new AppError("Invalid or expired token", 400));
+    }
+
+    if (user.verifyTokenExpiry! < new Date()) {
+      return next(new AppError("Token expired", 400));
+    }
+
+    await db
+      .update(users)
+      .set({
+        isVerified: true,
+        verifyToken: null,
+        verifyTokenExpiry: null,
+      })
+      .where(eq(users.id, user.id));
+
+    return res.status(200).json({
+      con: true,
+      message: "Email verified successfully",
+    });
+  } catch (error) {
     next(error);
   }
 };

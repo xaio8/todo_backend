@@ -22,10 +22,13 @@ export const priorityEnum = pgEnum("priority", ["low", "medium", "high"]);
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
-  email: varchar("email", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull().unique(),
   password: varchar("password").notNull(),
   role: userRoleEnum("role").default("user"),
   refreshToken: text("refreshToken"),
+  isVerified: boolean("is_verified").default(false),
+  verifyToken: text("verify_token"),
+  verifyTokenExpiry: timestamp("verify_token_expiry"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
