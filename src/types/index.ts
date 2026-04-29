@@ -15,3 +15,8 @@ export interface ApiResponse<T> {
   data?: T;
   error?: Array<{ field: string; message: string }>;
 }
+
+export interface ChatParams {
+  model?: string;
+  prompt: string;
+}

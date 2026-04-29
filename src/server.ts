@@ -7,6 +7,7 @@ import router from "./routes/index.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { checkConnection } from "./db/index.js";
 import adminRoute from "./routes/admin.router.js";
+import aiRouter from "./routes/openRouter.router.js";
 
 dotenv.config();
 
@@ -22,6 +23,9 @@ app.use(cookieParser());
 
 // user route
 app.use(api, router);
+
+// ai route
+app.use(`${api}/ai`, aiRouter);
 
 // admin route
 app.use(`${api}/admin`, adminRoute);
