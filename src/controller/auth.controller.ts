@@ -73,7 +73,7 @@ export const loginUser = async (
     }
 
     // generate token
-    const { accessToken, refreshToken } = await generateToken({
+    const { accessToken, refreshToken } = generateToken({
       id: user.id,
       role: user.role,
     });
@@ -290,32 +290,56 @@ export const refreshAccessToken = async (
     }
 
     // verify token
-    jwt.verify(
+    const decoded = jwt.verify(
       refreshToken,
       process.env.JWT_REFRESH_SECRET!,
-      (err: any, decoded: any) => {
-        if (err || decoded.userId !== user.id.toString()) {
-          return res.status(403).json({
-            con: false,
-            message: "Token expired or invalid",
-          });
-        }
-      },
-    );
+    ) as jwt.JwtPayload;
 
-    // generate new access token
-    const accessToken = generateAccessToken({
+    // compare payload userId
+    if (decoded.userId !== user.id.toString()) {
+      return res.status(403).json({
+        con: false,
+        message: "Invalid token payload",
+      });
+    }
+
+    // rotate tokens
+    const tokens = generateToken({
       id: user.id,
       role: user.role,
     });
+
+    await db
+      .update(users)
+      .set({
+        refreshToken: tokens.refreshToken,
+      })
+      .where(eq(users.id, user.id));
+
+    // set cookies
+    setRefreshTokenCookies(res, tokens.refreshToken);
+
     res.status(200).json({
       con: true,
       message: "Token refreshed successfully",
       data: {
-        token: accessToken,
+        token: tokens.accessToken,
       },
     });
   } catch (error) {
+    if (error instanceof jwt.TokenExpiredError) {
+      return res.status(403).json({
+        con: false,
+        message: "Refresh token expired",
+      });
+    }
+
+    if (error instanceof jwt.JsonWebTokenError) {
+      return res.status(403).json({
+        con: false,
+        message: "Invalid refresh token",
+      });
+    }
     next(error);
   }
 };

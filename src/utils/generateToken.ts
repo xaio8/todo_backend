@@ -18,7 +18,7 @@ export const generateAccessToken = (user: User): string => {
   );
 };
 
-export const generateToken = async (user: User): Promise<TokenResponse> => {
+export const generateToken = (user: User): TokenResponse => {
   const accessToken = generateAccessToken(user);
 
   const refreshToken = jwt.sign(

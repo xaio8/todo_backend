@@ -9,7 +9,7 @@ export const ask = async (req: Request, res: Response, next: NextFunction) => {
       return next(new AppError("Prompt is required", 400));
     }
 
-    const aiResponse = await OpenRouterService.chat(prompt);
+    const aiResponse = await OpenRouterService.chat({prompt});
     res.status(200).json({
       con: true,
       message: "AI response fetched successfully",

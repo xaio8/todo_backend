@@ -8,11 +8,16 @@ const client = new OpenAI({
 
 export class OpenRouterService {
   static async chat(params: ChatParams) {
-    const stream = await client.chat.completions.create({
-      model: params.model || "openai/gpt-oss-120b:free",
-      messages: [{ role: "user", content: params.prompt }],
-      stream: true,
-    });
-    return stream;
+    try {
+      const stream = await client.chat.completions.create({
+        model: params.model || "openai/gpt-oss-120b:free",
+        messages: [{ role: "user", content: params.prompt }],
+        stream: false,
+      });
+      return stream.choices[0]?.message?.content;
+    } catch (error) {
+      console.error("Error fetching AI: ", error);
+      throw new Error("Failed to fetch AI response");
+    }
   }
 }
