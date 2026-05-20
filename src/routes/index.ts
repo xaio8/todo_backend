@@ -3,6 +3,7 @@ import todoRoute from "./todo.router.js";
 import authRoute from "./auth.router.js";
 import userRoute from "./user.router.js";
 import analysisRouter from "./analytics.router.js";
+import chatRoute from "./chat.router.js";
 
 const router = Router();
 
@@ -15,5 +16,6 @@ router.use("/auth", authRoute);
 router.use("/todos", todoRoute);
 router.use("/users", userRoute);
 router.use("/analysis", analysisRouter);
+router.use("/chat", chatRoute);
 
 export default router;
