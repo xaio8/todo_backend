@@ -22,7 +22,7 @@ const loginSchema = z.object({
 
 const signUpSchema = z
   .object({
-    name: z.string().max(50),
+    // name: z.string().max(50),
     email: z.email("Please enter a valid email address").trim(),
     password: z
       .string()
@@ -110,9 +110,7 @@ export const signUpUser = async (
   next: NextFunction,
 ) => {
   try {
-    const { name, email, password, confirmPassword } = signUpSchema.parse(
-      req.body,
-    );
+    const { email, password, confirmPassword } = signUpSchema.parse(req.body);
 
     const [existingUser] = await db
       .select()
@@ -124,6 +122,8 @@ export const signUpUser = async (
         message: "Email already exits",
       });
     }
+
+    const name = email.split("@")[0];
 
     const hashedPassword = await bcrypt.hash(password, 10);
 

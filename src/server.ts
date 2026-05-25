@@ -16,7 +16,7 @@ dotenv.config();
 
 const port = Number(process.env.PORT ?? 3000);
 const api = process.env.API_URL ?? "";
-const clientUrl = process.env.CLIENT_URL ?? "http://localhost:5000";
+const clientUrl = process.env.CLIENT_URL ?? "http://localhost:5173";
 
 const app = express();
 const httpServer = createServer(app);
@@ -36,7 +36,14 @@ registerChatHandlers(io);
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-app.use(cors());
+app.use(
+  cors({
+    origin: clientUrl,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
 app.use(cookieParser());
 
 // user route
