@@ -5,35 +5,12 @@ import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { generateAccessToken, generateToken } from "../utils/generateToken.js";
 import { SafeUser } from "../types/index.js";
-import z from "zod";
 import { ZodError } from "zod/v3";
 import { setRefreshTokenCookies } from "../utils/cookiesHelper.js";
 import jwt from "jsonwebtoken";
 import { AppError } from "../utils/AppError.js";
+import { isValidEmailFormat } from "../utils/validateEmail.js";
 // import { sendVerificationEmail } from "../utils/mailHelper.js";
-
-const loginSchema = z.object({
-  email: z.email("Invalid email format").trim(),
-  password: z
-    .string()
-    .min(6, " password must be at least 6 characters")
-    .max(100, "password is too long"),
-});
-
-const signUpSchema = z
-  .object({
-    // name: z.string().max(50),
-    email: z.email("Please enter a valid email address").trim(),
-    password: z
-      .string()
-      .min(6, " password must be at least 6 characters")
-      .max(100, "password is too long"),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-  });
 
 // login user
 export const loginUser = async (
@@ -42,7 +19,7 @@ export const loginUser = async (
   next: NextFunction,
 ) => {
   try {
-    const { email, password } = loginSchema.parse(req.body);
+    const { email, password } = req.body;
 
     if (!email || !password) {
       return next(new AppError("Please fill all required fields", 400));
@@ -110,7 +87,7 @@ export const signUpUser = async (
   next: NextFunction,
 ) => {
   try {
-    const { email, password, confirmPassword } = signUpSchema.parse(req.body);
+    const { email, password, confirmPassword } = req.body;
 
     const [existingUser] = await db
       .select()
@@ -121,6 +98,10 @@ export const signUpUser = async (
         con: false,
         message: "Email already exits",
       });
+    }
+
+    if (!isValidEmailFormat(email)) {
+      return next(new AppError("Invalid email format", 400));
     }
 
     const name = email.split("@")[0];
@@ -152,7 +133,7 @@ export const signUpUser = async (
     //   message: "Signup successful. Please verify your email.",
     // });
 
-    const { accessToken, refreshToken } = await generateToken({
+    const { accessToken, refreshToken } = generateToken({
       id: newUser.id,
       role: newUser.role,
     });
@@ -164,17 +145,27 @@ export const signUpUser = async (
 
     setRefreshTokenCookies(res, refreshToken);
 
-    const {
-      password: _,
-      refreshToken: __,
-      ...userWithoutSensitiveData
-    } = newUser;
+    // const {
+    //   password: _,
+    //   refreshToken: __,
+    //   ...userWithoutSensitiveData
+    // } = newUser;
+
+    const safeUser = {
+      id: newUser.id,
+      name: newUser.name,
+      email: newUser.email,
+      role: newUser.role,
+      createdAt: newUser.createdAt,
+      updatedAt: newUser.updatedAt,
+    } as SafeUser;
+
     return res.status(201).json({
       con: true,
       message: "Account create successfully",
+      accessToken,
       data: {
-        user: userWithoutSensitiveData,
-        token: accessToken,
+        safeUser,
       },
     });
   } catch (error) {
