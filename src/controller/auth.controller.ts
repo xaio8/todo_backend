@@ -10,6 +10,7 @@ import { setRefreshTokenCookies } from "../utils/cookiesHelper.js";
 import jwt from "jsonwebtoken";
 import { AppError } from "../utils/AppError.js";
 import { isValidEmailFormat } from "../utils/validateEmail.js";
+import { AuthService } from "../services/auth.service.js";
 // import { sendVerificationEmail } from "../utils/mailHelper.js";
 
 // login user
@@ -269,10 +270,7 @@ export const refreshAccessToken = async (
     }
 
     // check token is valid on table
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.refreshToken, refreshToken));
+    const user = await AuthService.findUserByRefreshToken(refreshToken);
     if (!user) {
       return res.status(400).json({
         con: false,
@@ -300,12 +298,11 @@ export const refreshAccessToken = async (
       role: user.role,
     });
 
-    await db
-      .update(users)
-      .set({
-        refreshToken: tokens.refreshToken,
-      })
-      .where(eq(users.id, user.id));
+    // update new refresh token in database
+    await AuthService.updateUserRefreshToken(
+      user.id.toString(),
+      tokens.refreshToken,
+    );
 
     // set cookies
     setRefreshTokenCookies(res, tokens.refreshToken);
@@ -315,6 +312,82 @@ export const refreshAccessToken = async (
       message: "Token refreshed successfully",
       data: {
         token: tokens.accessToken,
+      },
+    });
+  } catch (error) {
+    if (error instanceof jwt.TokenExpiredError) {
+      return res.status(403).json({
+        con: false,
+        message: "Refresh token expired",
+      });
+    }
+
+    if (error instanceof jwt.JsonWebTokenError) {
+      return res.status(403).json({
+        con: false,
+        message: "Invalid refresh token",
+      });
+    }
+    next(error);
+  }
+};
+
+export const checkAuth = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const refreshToken = req.cookies.refreshToken;
+    if (!refreshToken) {
+      return next(new AppError("Not Authenticated", 401));
+    }
+
+    const user = await AuthService.findUserByRefreshToken(refreshToken);
+    if (!user) {
+      return next(new AppError("Invalid Refresh Token", 400));
+    }
+
+    // verify token
+    const decoded = jwt.verify(
+      refreshToken,
+      process.env.JWT_REFRESH_SECRET!,
+    ) as jwt.JwtPayload;
+
+    // compare payload userId
+    if (decoded.userId !== user.id.toString()) {
+      return res.status(403).json({
+        con: false,
+        message: "Invalid token payload",
+      });
+    }
+
+    // rotate tokens
+    const tokens = generateToken({
+      id: user.id,
+      role: user.role,
+    });
+
+    // update new refresh token in database
+    await AuthService.updateUserRefreshToken(
+      user.id.toString(),
+      tokens.refreshToken,
+    );
+
+    // set cookies
+    setRefreshTokenCookies(res, tokens.refreshToken);
+
+    res.status(200).json({
+      con: true,
+      message: "Authenticated",
+      token: tokens.accessToken,
+      data: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
       },
     });
   } catch (error) {

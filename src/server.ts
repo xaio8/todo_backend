@@ -34,7 +34,7 @@ const io = new Server(httpServer, {
 registerChatHandlers(io);
 
 app.use(express.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(
   cors({

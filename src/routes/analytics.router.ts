@@ -10,7 +10,7 @@ const analysisRouter = Router();
 analysisRouter.use(protectedRoute);
 analysisRouter.use(roleBasedAccess("admin"));
 
-analysisRouter.get("/",analysisController.getFullTodoReport)
+analysisRouter.get("/", analysisController.getFullTodoReport);
 analysisRouter.get("/global", analysisController.getAdminDashboard);
 
 export default analysisRouter;

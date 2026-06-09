@@ -3,17 +3,6 @@ import { UserService } from "../services/user.service.js";
 import { AppError } from "../utils/AppError.js";
 import { userRoleEnum } from "../db/schema.js";
 import { ApiResponse, SafeUser } from "../types/index.js";
-import z from "zod";
-
-//! Validation
-export const updateUserSchema = z.object({
-  name: z
-    .string()
-    .min(3, "Name must be at least 2 characters")
-    .max(255, "Name is too long")
-    .optional(),
-  email: z.email("Invalid email format").optional(),
-});
 
 //! FOR ADMIN
 //* get all users
@@ -111,7 +100,7 @@ export const updateUserById = async (
       return next(new AppError("User ID is required", 400));
     }
 
-    const data = updateUserSchema.parse(req.body);
+    const data = req.body;
     if (Object.keys(data).length === 0) {
       return next(new AppError("No Data provided to update", 400));
     }

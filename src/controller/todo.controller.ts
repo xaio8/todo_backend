@@ -3,19 +3,7 @@ import { db } from "../db/index.js";
 import { todos } from "../db/schema.js";
 import { AppError } from "../utils/AppError.js";
 import { and, eq } from "drizzle-orm";
-import z from "zod";
 import { TodoService } from "../services/todo.service.js";
-
-export const createTodoSchema = z.object({
-  title: z.string().min(1, "Title is required").max(255),
-  description: z.string().optional(),
-  priority: z.enum(["low", "medium", "high"]).optional(),
-  dueDate: z.iso.datetime().nullable().optional(),
-  scheduledAt: z.iso.datetime().nullable().optional(),
-  isAllDay: z.boolean().optional(),
-});
-
-export const updateTodoSchema = createTodoSchema.partial();
 
 // get todos by date
 export const getTodayTodos = async (
@@ -84,7 +72,7 @@ export const createTodo = async (
 ) => {
   try {
     const userId = req.user?.id;
-    const createTodo = createTodoSchema.parse(req.body);
+    const createTodo = req.body;
 
     if (!userId) {
       return next(new AppError("User ID are required", 400));
@@ -121,7 +109,7 @@ export const updateTodo = async (
   try {
     const { id } = req.params;
     const userId = req.user?.id;
-    const validation = updateTodoSchema.safeParse(req.body);
+    const validation = req.body;
 
     if (!validation.success) {
       return res.status(400).json({
