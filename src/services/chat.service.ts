@@ -114,9 +114,9 @@ export class ChatService {
     name: string,
     memberIds: string[],
   ) {
-    const uniqueMemberIds = [
-      ...new Set([currentUserId, ...memberIds]),
-    ].filter(Boolean);
+    const uniqueMemberIds = [...new Set([currentUserId, ...memberIds])].filter(
+      Boolean,
+    );
 
     if (uniqueMemberIds.length < 2) {
       throw new Error("A group chat requires at least 2 members");
@@ -213,7 +213,11 @@ export class ChatService {
     };
   }
 
-  static async getUserConversations(userId: string, page: number, limit: number) {
+  static async getUserConversations(
+    userId: string,
+    page: number,
+    limit: number,
+  ) {
     const offset = (page - 1) * limit;
 
     const memberRows = await db
