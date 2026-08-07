@@ -14,7 +14,7 @@ jobs:
 
       - name: Build tag version
         id: tag-version
-        run: echo "version=${{github.run_number}}-${{GITHUB_SHA::7}}" >> $GITHUB_OUTPUT
+        run: echo "version=${{ github.run_number }}-${ GITHUB_SHA::7 }" >> $GITHUB_OUTPUT
 
       - name: Setup QEMU 
         uses: docker/setup-qemu-action@v3
