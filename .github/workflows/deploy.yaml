@@ -42,6 +42,7 @@ jobs:
           host: ${{ secrets.DROPLET_HOST }}
           username: ${{ secrets.DROPLET_USER }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
+          port: 22
           script: |
             cd /home/deploy/backend
             docker compose pull
