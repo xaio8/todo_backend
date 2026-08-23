@@ -1,10 +1,15 @@
 import { and, count, desc, eq, sql } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { todos } from "../db/schema.js";
+import { PaginationResult, Todo } from "../types/index.js";
 
 export class TodoService {
   // get all todos by user
-  static async getUserTodos(userId: string, page: number, limit: number) {
+  static async getUserTodos(
+    userId: string,
+    page: number,
+    limit: number,
+  ): Promise<PaginationResult<Todo>> {
     const offset = (page - 1) * limit;
     const [data, totalCount] = await Promise.all([
       db
@@ -20,9 +25,9 @@ export class TodoService {
     const totalTodos = totalCount[0].value;
     const totalPages = Math.ceil(totalTodos / limit);
     return {
-      todos: data,
+      items: data,
       meta: {
-        totalTodos,
+        totalItems: totalTodos,
         totalPages,
         currentPage: page,
         limit,
@@ -45,7 +50,10 @@ export class TodoService {
   }
 
   // get all todos by admin
-  static async getAllTodosForAdmin(page: number, limit: number) {
+  static async getAllTodosForAdmin(
+    page: number,
+    limit: number,
+  ): Promise<PaginationResult<Todo>> {
     const offset = (page - 1) * limit;
     const [data, totalCount] = await Promise.all([
       db
@@ -60,9 +68,9 @@ export class TodoService {
     const totalTodos = totalCount[0].value;
     const totalPages = Math.ceil(totalTodos / limit);
     return {
-      todos: data,
+      items: data,
       meta: {
-        totalTodos,
+        totalItems: totalTodos,
         totalPages,
         currentPage: page,
         limit,

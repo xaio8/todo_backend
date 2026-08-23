@@ -1,12 +1,15 @@
 import { count, desc, eq } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { userRoleEnum, users } from "../db/schema.js";
-import { SafeUser } from "../types/index.js";
+import {  PaginationResult, SafeUser } from "../types/index.js";
 
 export class UserService {
   //! FOR ADMIN
   // get all users
-  static async getAllUsers(page: number, limit: number) {
+  static async getAllUsers(
+    page: number,
+    limit: number,
+  ): Promise<PaginationResult<SafeUser>> {
     const offset = (page - 1) * limit;
     const [data, totalCounts] = await Promise.all([
       db
@@ -20,10 +23,13 @@ export class UserService {
 
     const totalUsers = totalCounts[0].value;
     const totalPages = Math.ceil(totalUsers / limit);
+    const safeUsers: SafeUser[] = data.map(
+      ({ password, refreshToken, ...user }) => user,
+    );
     return {
-      users: data,
+      items: safeUsers,
       meta: {
-        totalUsers,
+        totalItems: totalUsers,
         totalPages,
         currentPage: page,
         limit,
@@ -69,16 +75,15 @@ export class UserService {
     id: string,
     data: { name?: string; email?: string },
   ): Promise<SafeUser> {
-
     const [updatedUser] = await db
       .update(users)
       .set({ ...data, updatedAt: new Date() })
       .where(eq(users.id, id))
       .returning();
 
-      if(!updatedUser){
-        throw new Error("User not found")
-      }
+    if (!updatedUser) {
+      throw new Error("User not found");
+    }
 
     const { password: _, refreshToken: __, ...safeUser } = updatedUser;
     return safeUser;

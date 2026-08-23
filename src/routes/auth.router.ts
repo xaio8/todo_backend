@@ -8,7 +8,7 @@ authRoute.post("/login", validate(loginSchema), authController.loginUser);
 authRoute.post("/signup", validate(signUpSchema), authController.signUpUser);
 authRoute.post("/logout", authController.logout);
 authRoute.get("/me", authController.checkAuth);
-authRoute.post("/refresh_access_token", authController.refreshAccessToken);
+authRoute.post("/refresh-access-token", authController.refreshAccessToken);
 // authRoute.post("/verify-email",authController.verifyEmail);
 
 export default authRoute;

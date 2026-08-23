@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { UserService } from "../services/user.service.js";
 import { AppError } from "../utils/AppError.js";
 import { userRoleEnum } from "../db/schema.js";
-import { ApiResponse, SafeUser } from "../types/index.js";
+import { ApiResponse, PaginationResult, SafeUser } from "../types/index.js";
 
 //! FOR ADMIN
 //* get all users
@@ -20,7 +20,7 @@ export const getAllUser = async (
       con: true,
       message: "Fetch all users successfully.",
       data: {
-        user: result.users,
+        user: result.items,
         pagination: result.meta,
       },
     });

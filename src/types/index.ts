@@ -16,6 +16,18 @@ export interface ApiResponse<T> {
   error?: Array<{ field: string; message: string }>;
 }
 
+export interface PaginationMeta {
+  totalItems: number;
+  totalPages: number;
+  currentPage: number;
+  limit: number;
+}
+
+export interface PaginationResult<T> {
+  items: T[];
+  meta: PaginationMeta;
+}
+
 export interface ChatParams {
   model?: string;
   prompt: string;
@@ -82,4 +94,19 @@ export interface TypingEventPayload {
   userId: string;
   userName: string;
   isTyping: boolean;
+}
+
+export interface AdminAnalytics {
+  monthlyStats: {
+    month: string;
+    total: number;
+    completed: number;
+    successRate: string;
+  }[];
+  kpis: {
+    totalSystemTodos: number;
+    globalCompletionRate: string;
+    globalOnTimeRate: string;
+    globalOverdueRate: string;
+  };
 }

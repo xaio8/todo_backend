@@ -1,6 +1,7 @@
 import { db } from "../db/index.js";
 import { todos } from "../db/schema.js";
 import { sql } from "drizzle-orm";
+import { AdminAnalytics } from "../types/index.js";
 
 export class AdminAnalyticsService {
   /**
@@ -63,17 +64,31 @@ export class AdminAnalyticsService {
     const [result] = await db
       .select({
         totalTodos: sql<number>`count(*)`,
-        avgCompletionRate: sql<number>`count(*) filter (where ${todos.status} = ${"completed"}) * 100.0 / count(*)`,
-        onTimeRate: sql<number>`count(*) filter (where ${todos.status} = ${"completed"} and ${todos.updatedAt} <= ${todos.dueDate}) * 100.0 / count(*) filter (where ${todos.status} = ${"completed"})`,
-        overdueRate: sql<number>`count(*) filter (where ${todos.status} <> ${"completed"} and ${todos.dueDate} < ${now}) * 100.0 / count(*)`,
+        avgCompletionRate: sql<number>`count(*) filter (where ${todos.status} = ${"completed"}) * 100.0 / NULLIF(count(*), 0)`,
+        onTimeRate: sql<number>`count(*) filter (where ${todos.status} = ${"completed"} and ${todos.updatedAt} <= ${todos.dueDate}) * 100.0 / NULLIF(count(*) filter (where ${todos.status} = ${"completed"}), 0)`,
+        overdueRate: sql<number>`count(*) filter (where ${todos.status} <> ${"completed"} and ${todos.dueDate} < ${now}) * 100.0 / NULLIF(count(*), 0)`,
       })
       .from(todos);
+
+    console.log("result ", result);
 
     return {
       totalSystemTodos: Number(result.totalTodos),
       globalCompletionRate: Number(result.avgCompletionRate).toFixed(1) + "%",
       globalOnTimeRate: Number(result.onTimeRate).toFixed(1) + "%",
       globalOverdueRate: Number(result.overdueRate).toFixed(1) + "%",
+    };
+  }
+
+  static async getAdminAnalytics(year: number): Promise<AdminAnalytics> {
+    const [monthlyStats, kpis] = await Promise.all([
+      this.getGlobalMonthlyStats(year),
+      this.getSystemKPIs(),
+    ]);
+
+    return {
+      monthlyStats,
+      kpis,
     };
   }
 }
