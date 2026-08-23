@@ -55,7 +55,7 @@ export const getAllTodos = async (
       con: true,
       message: "Todos fetch successful",
       data: {
-        todos: result.todos,
+        todos: result.items,
         pagination: result.meta,
       },
     });
@@ -109,17 +109,17 @@ export const updateTodo = async (
   try {
     const { id } = req.params;
     const userId = req.user?.id;
-    const validation = req.body;
+    // const validation = req.body;
 
-    if (!validation.success) {
-      return res.status(400).json({
-        con: false,
-        message: "validation failed",
-        error: validation.error,
-      });
-    }
+    // if (!validation.success) {
+    //   return res.status(400).json({
+    //     con: false,
+    //     message: "validation failed",
+    //     error: validation.error,
+    //   });
+    // }
 
-    const validatedData = validation.data;
+    const validatedData = req.body;
 
     const [updatedTodo] = await db
       .update(todos)
@@ -195,7 +195,7 @@ export const getAllTodosByAdmin = async (
       con: true,
       message: "Fetch todos successful",
       data: {
-        todos: result.todos,
+        todos: result.items,
         pagination: result.meta,
       },
     });

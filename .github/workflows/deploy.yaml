@@ -22,6 +22,6 @@ jobs:
           script: |
             cd /home/deploy/backend
 
-            export IMAGE_TAG=${{ github.event.inputs.image_tag }}
+            export IMAGE_TAG=${{ secrets.DOCKERHUB_USERNAME }}/todo-backend:${{ inputs.image_tag}}
             docker compose pull
             docker compose up -d

@@ -3,7 +3,7 @@ import { db } from "../db/index.js";
 import { users } from "../db/schema.js";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
-import { generateAccessToken, generateToken } from "../utils/generateToken.js";
+import {  generateToken } from "../utils/generateToken.js";
 import { SafeUser } from "../types/index.js";
 import { ZodError } from "zod/v3";
 import { setRefreshTokenCookies } from "../utils/cookiesHelper.js";
@@ -88,7 +88,7 @@ export const signUpUser = async (
   next: NextFunction,
 ) => {
   try {
-    const { email, password, confirmPassword } = req.body;
+    const { email, password } = req.body;
 
     const [existingUser] = await db
       .select()

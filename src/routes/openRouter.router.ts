@@ -1,5 +1,8 @@
 import { Router } from "express";
-import { ask } from "../controller/openRouter.controller.js";
+import {
+  ask,
+  yearlyAnalysisWithAI,
+} from "../controller/openRouter.controller.js";
 import {
   protectedRoute,
   roleBasedAccess,
@@ -8,6 +11,9 @@ import {
 const aiRouter = Router();
 
 aiRouter.use(protectedRoute);
-aiRouter.post("/ask", roleBasedAccess("admin"), ask);
+aiRouter.use(roleBasedAccess("admin"));
+
+aiRouter.post("/ask", ask);
+aiRouter.post("/yearly-analysis", yearlyAnalysisWithAI);
 
 export default aiRouter;
