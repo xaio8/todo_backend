@@ -70,8 +70,6 @@ export class AdminAnalyticsService {
       })
       .from(todos);
 
-    console.log("result ", result);
-
     return {
       totalSystemTodos: Number(result.totalTodos),
       globalCompletionRate: Number(result.avgCompletionRate).toFixed(1) + "%",

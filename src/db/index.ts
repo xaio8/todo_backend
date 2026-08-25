@@ -26,9 +26,9 @@ export const checkConnection = async () => {
   try {
     // Attempt a simple query
     await pool.query("SELECT 1");
-    console.log("✅ Successfully connected to the database!");
+    console.log("Successfully connected to the database!");
   } catch (error) {
-    console.error("❌ Database connection failed:", error);
+    console.error("Database connection failed:", error);
     process.exit(1); // Exit if the app cannot connect
   }
 };

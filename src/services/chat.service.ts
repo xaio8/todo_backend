@@ -12,21 +12,43 @@ import {
   MessageReceivedPayload,
 } from "../types/index.js";
 import OnlineUsersService from "./onlineUsers.service.js";
+import CacheService from "./cache.service.js";
 
 export class ChatService {
-  static async isMember(conversationId: string, userId: string) {
-    const [member] = await db
-      .select({ id: conversationMembers.id })
-      .from(conversationMembers)
-      .where(
-        and(
-          eq(conversationMembers.conversationId, conversationId),
-          eq(conversationMembers.userId, userId),
-        ),
-      )
-      .limit(1);
+  private static MEMBER_IDS_TTL = 300;
+  private static MEMBERS_TTL = 300;
+  private static LAST_MESSAGE_TTL = 60;
 
-    return !!member;
+  static memberSetKey(conversationId: string) {
+    return `chat:conv:${conversationId}:memberIds`;
+  }
+
+  static membersKey(conversationId: string) {
+    return `chat:conv:${conversationId}:members`;
+  }
+
+  static lastMessageKey(conversationId: string) {
+    return `chat:conv:${conversationId}:lastMessage`;
+  }
+
+  static async isMember(conversationId: string, userId: string) {
+    const setKey = this.memberSetKey(conversationId);
+
+    const cachedResult = await CacheService.setHas(setKey, userId);
+    if (cachedResult !== null) return cachedResult;
+
+    const rows = await db
+      .select({ userId: conversationMembers.userId })
+      .from(conversationMembers)
+      .where(eq(conversationMembers.conversationId, conversationId));
+
+    await CacheService.hydrateSet(
+      setKey,
+      rows.map((row) => row.userId),
+      this.MEMBER_IDS_TTL,
+    );
+
+    return rows.some((row) => row.userId === userId);
   }
 
   static async findPrivateConversation(userId1: string, userId2: string) {
@@ -151,8 +173,8 @@ export class ChatService {
     return this.getConversationById(conversation.id, currentUserId);
   }
 
-  static async getConversationMembers(conversationId: string) {
-    const members = await db
+  private static async fetchMembersFromDb(conversationId: string) {
+    return db
       .select({
         id: users.id,
         name: users.name,
@@ -163,11 +185,47 @@ export class ChatService {
       .from(conversationMembers)
       .innerJoin(users, eq(users.id, conversationMembers.userId))
       .where(eq(conversationMembers.conversationId, conversationId));
+  }
+
+  static async getConversationMembers(conversationId: string) {
+    const members = await CacheService.cached(
+      this.membersKey(conversationId),
+      this.MEMBERS_TTL,
+      () => this.fetchMembersFromDb(conversationId),
+    );
 
     return members.map((member) => ({
       ...member,
       isOnline: OnlineUsersService.isOnline(member.id),
     }));
+  }
+
+  static async getLastMessage(conversationId: string) {
+    return CacheService.cached(
+      this.lastMessageKey(conversationId),
+      this.LAST_MESSAGE_TTL,
+      async () => {
+        const [lastMessage] = await db
+          .select({
+            id: messages.id,
+            content: messages.content,
+            senderId: messages.senderId,
+            isEdited: messages.isEdited,
+            createdAt: messages.createdAt,
+          })
+          .from(messages)
+          .where(
+            and(
+              eq(messages.conversationId, conversationId),
+              eq(messages.isDeleted, false),
+            ),
+          )
+          .orderBy(desc(messages.createdAt))
+          .limit(1);
+
+        return lastMessage ?? null;
+      },
+    );
   }
 
   static async getConversationById(conversationId: string, userId: string) {
@@ -188,23 +246,7 @@ export class ChatService {
 
     const members = await this.getConversationMembers(conversationId);
 
-    const [lastMessage] = await db
-      .select({
-        id: messages.id,
-        content: messages.content,
-        senderId: messages.senderId,
-        isEdited: messages.isEdited,
-        createdAt: messages.createdAt,
-      })
-      .from(messages)
-      .where(
-        and(
-          eq(messages.conversationId, conversationId),
-          eq(messages.isDeleted, false),
-        ),
-      )
-      .orderBy(desc(messages.createdAt))
-      .limit(1);
+    const lastMessage = await this.getLastMessage(conversationId);
 
     return {
       ...conversation,
@@ -250,25 +292,10 @@ export class ChatService {
 
     const enriched = await Promise.all(
       data.map(async (conversation) => {
-        const members = await this.getConversationMembers(conversation.id);
-
-        const [lastMessage] = await db
-          .select({
-            id: messages.id,
-            content: messages.content,
-            senderId: messages.senderId,
-            isEdited: messages.isEdited,
-            createdAt: messages.createdAt,
-          })
-          .from(messages)
-          .where(
-            and(
-              eq(messages.conversationId, conversation.id),
-              eq(messages.isDeleted, false),
-            ),
-          )
-          .orderBy(desc(messages.createdAt))
-          .limit(1);
+        const [members, lastMessage] = await Promise.all([
+          this.getConversationMembers(conversation.id),
+          this.getLastMessage(conversation.id),
+        ]);
 
         return {
           ...conversation,
@@ -386,6 +413,8 @@ export class ChatService {
       .set({ updatedAt: new Date() })
       .where(eq(conversations.id, conversationId));
 
+    await CacheService.del(this.lastMessageKey(conversationId));
+
     return {
       id: message.id,
       conversationId: message.conversationId,
@@ -451,6 +480,8 @@ export class ChatService {
       .set({ updatedAt: now })
       .where(eq(conversations.id, conversationId));
 
+    await CacheService.del(this.lastMessageKey(conversationId));
+
     return {
       id: updated.id,
       conversationId: updated.conversationId,
@@ -494,6 +525,8 @@ export class ChatService {
       .update(messages)
       .set({ isDeleted: true, updatedAt: new Date() })
       .where(eq(messages.id, messageId));
+
+    await CacheService.del(this.lastMessageKey(conversationId));
 
     return { id: messageId, conversationId };
   }
@@ -569,6 +602,11 @@ export class ChatService {
         userId,
         isAdmin: false,
       })),
+    );
+
+    await CacheService.del(
+      this.membersKey(conversationId),
+      this.memberSetKey(conversationId),
     );
 
     return this.getConversationById(conversationId, adminUserId);
