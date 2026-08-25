@@ -3,7 +3,7 @@ import { db } from "../db/index.js";
 import { users } from "../db/schema.js";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
-import {  generateToken } from "../utils/generateToken.js";
+import { generateAccessToken, generateToken } from "../utils/generateToken.js";
 import { SafeUser } from "../types/index.js";
 import { ZodError } from "zod/v3";
 import { setRefreshTokenCookies } from "../utils/cookiesHelper.js";
@@ -269,6 +269,12 @@ export const refreshAccessToken = async (
       });
     }
 
+    // verify token signature first - avoid a db lookup for invalid tokens
+    const decoded = jwt.verify(
+      refreshToken,
+      process.env.JWT_REFRESH_SECRET!,
+    ) as jwt.JwtPayload;
+
     // check token is valid on table
     const user = await AuthService.findUserByRefreshToken(refreshToken);
     if (!user) {
@@ -277,12 +283,6 @@ export const refreshAccessToken = async (
         message: "Invalid refresh token",
       });
     }
-
-    // verify token
-    const decoded = jwt.verify(
-      refreshToken,
-      process.env.JWT_REFRESH_SECRET!,
-    ) as jwt.JwtPayload;
 
     // compare payload userId
     if (decoded.userId !== user.id.toString()) {
@@ -343,16 +343,16 @@ export const checkAuth = async (
       return next(new AppError("Not Authenticated", 401));
     }
 
-    const user = await AuthService.findUserByRefreshToken(refreshToken);
-    if (!user) {
-      return next(new AppError("Invalid Refresh Token", 400));
-    }
-
-    // verify token
+    // verify token signature first - avoid a db lookup for invalid tokens
     const decoded = jwt.verify(
       refreshToken,
       process.env.JWT_REFRESH_SECRET!,
     ) as jwt.JwtPayload;
+
+    const user = await AuthService.findUserByRefreshToken(refreshToken);
+    if (!user) {
+      return next(new AppError("Invalid Refresh Token", 400));
+    }
 
     // compare payload userId
     if (decoded.userId !== user.id.toString()) {
@@ -362,25 +362,17 @@ export const checkAuth = async (
       });
     }
 
-    // rotate tokens
-    const tokens = generateToken({
+    // sign a fresh access token only - rotating the refresh token here would
+    // invalidate concurrent /me calls (e.g. react strictmode double-mount)
+    const accessToken = generateAccessToken({
       id: user.id,
       role: user.role,
     });
 
-    // update new refresh token in database
-    await AuthService.updateUserRefreshToken(
-      user.id.toString(),
-      tokens.refreshToken,
-    );
-
-    // set cookies
-    setRefreshTokenCookies(res, tokens.refreshToken);
-
     res.status(200).json({
       con: true,
       message: "Authenticated",
-      token: tokens.accessToken,
+      token: accessToken,
       data: {
         id: user.id,
         name: user.name,

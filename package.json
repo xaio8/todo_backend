@@ -39,6 +39,7 @@
     "dotenv": "^17.4.0",
     "drizzle-orm": "^0.45.2",
     "express": "^5.2.1",
+    "ioredis": "^6.0.0",
     "jsonwebtoken": "^9.0.3",
     "nodemailer": "^8.0.4",
     "openai": "^6.34.0",

@@ -8,6 +8,7 @@ import cookieParser from "cookie-parser";
 import router from "./routes/index.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { checkConnection } from "./db/index.js";
+import { checkRedisConnection } from "./config/redis.js";
 import adminRoute from "./routes/admin.router.js";
 import aiRouter from "./routes/openRouter.router.js";
 import { registerChatHandlers } from "./socket/chat.socket.js";
@@ -61,4 +62,5 @@ app.use(errorHandler);
 httpServer.listen(port, async () => {
   console.log(`Server is running on http://localhost:${port}`);
   await checkConnection();
+  await checkRedisConnection();
 });
