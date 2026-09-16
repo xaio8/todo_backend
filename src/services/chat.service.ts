@@ -13,6 +13,7 @@ import {
 } from "../types/index.js";
 import OnlineUsersService from "./onlineUsers.service.js";
 import CacheService from "./cache.service.js";
+import NotificationService from "./notification.service.js";
 
 export class ChatService {
   private static MEMBER_IDS_TTL = 300;
@@ -414,6 +415,25 @@ export class ChatService {
       .where(eq(conversations.id, conversationId));
 
     await CacheService.del(this.lastMessageKey(conversationId));
+
+    // notify members who are offline - online members already got the live message
+    const members = await this.getConversationMembers(conversationId);
+    const senderName = sender?.name ?? "Someone";
+    await Promise.all(
+      members
+        .filter((member) => member.id !== senderId && !member.isOnline)
+        .map((member) =>
+          NotificationService.create({
+            userId: member.id,
+            type: "message",
+            title: `${senderName} sent you a message`,
+            body: trimmed.slice(0, 100),
+            referenceId: conversationId,
+          }).catch(() => {
+            // notification failure must never block the message itself
+          }),
+        ),
+    );
 
     return {
       id: message.id,

@@ -7,11 +7,12 @@ import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
 import router from "./routes/index.js";
 import { errorHandler } from "./middleware/errorHandler.js";
-import { checkConnection } from "./db/index.js";
-import { checkRedisConnection } from "./config/redis.js";
+import { checkConnection, pool } from "./db/index.js";
+import { checkRedisConnection, redis } from "./config/redis.js";
 import adminRoute from "./routes/admin.router.js";
 import aiRouter from "./routes/openRouter.router.js";
 import { registerChatHandlers } from "./socket/chat.socket.js";
+import ReminderDispatcherService from "./services/reminderDispatcher.service.js";
 
 dotenv.config();
 
@@ -63,4 +64,17 @@ httpServer.listen(port, async () => {
   console.log(`Server is running on http://localhost:${port}`);
   await checkConnection();
   await checkRedisConnection();
+  ReminderDispatcherService.start();
 });
+
+// graceful shutdown - docker stop / ctrl+c closes connections cleanly
+const shutdown = async (signal: string) => {
+  console.log(`${signal} received, shutting down gracefully...`);
+  io.disconnectSockets(true);
+  httpServer.close();
+  await Promise.allSettled([redis.quit(), pool.end()]);
+  process.exit(0);
+};
+
+process.on("SIGTERM", () => void shutdown("SIGTERM"));
+process.on("SIGINT", () => void shutdown("SIGINT"));

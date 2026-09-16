@@ -1,7 +1,7 @@
-import { count, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq, ilike, ne } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { userRoleEnum, users } from "../db/schema.js";
-import {  PaginationResult, SafeUser } from "../types/index.js";
+import { PaginationResult, SafeUser } from "../types/index.js";
 
 export class UserService {
   //! FOR ADMIN
@@ -87,5 +87,26 @@ export class UserService {
 
     const { password: _, refreshToken: __, ...safeUser } = updatedUser;
     return safeUser;
+  }
+
+  static async searchUsers(
+    query: string,
+    limit: number,
+    currentUserId: string,
+  ) {
+    const q = query.trim();
+    const take = Number(limit) || 10;
+    const usersList = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+      })
+      .from(users)
+      .where(and(ilike(users.name, `${q}%`), ne(users.id, currentUserId)))
+      .orderBy(users.name)
+      .limit(take);
+
+    return usersList;
   }
 }

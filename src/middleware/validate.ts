@@ -20,3 +20,19 @@ export const validate =
     req.body = result.data;
     next();
   };
+
+export const validateQuery =
+  (schema: z.ZodType) => (req: Request, res: Response, next: NextFunction) => {
+    const result = schema.safeParse(req.query);
+    if (!result.success) {
+      const messages = result.error.issues.map((err) => ({
+        field: err.path.join("."),
+        message: err.message,
+      }));
+      const firstError = messages[0];
+      const friendlyMessage = `${firstError.field}, ${firstError.message.toLowerCase()}`;
+      return next(new AppError(`Validation field: ${friendlyMessage}`, 400));
+    }
+    // req.query = result.data as any;
+    next();
+  };
