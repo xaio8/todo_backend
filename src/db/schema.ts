@@ -18,6 +18,11 @@ export const todoStatusEnum = pgEnum("todo_status", [
   "completed",
 ]);
 export const priorityEnum = pgEnum("priority", ["low", "medium", "high"]);
+export const notificationTypeEnum = pgEnum("notification_type", [
+  "todo_reminder",
+  "message",
+  "system",
+]);
 export const conversationEnum = pgEnum("conversation_type", [
   "private",
   "group",
@@ -80,6 +85,27 @@ export const reminders = pgTable("reminders", {
   isSent: boolean("is_sent").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
+
+// notifications table (delivered to user via socket + kept as history)
+export const notifications = pgTable(
+  "notifications",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    type: notificationTypeEnum("type").default("system").notNull(),
+    title: varchar("title", { length: 255 }).notNull(),
+    body: text("body"),
+    referenceId: uuid("reference_id"),
+    isRead: boolean("is_read").default(false).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("notification_user_idx").on(table.userId),
+    index("notification_user_unread_idx").on(table.userId, table.isRead),
+  ],
+);
 
 // conversation table
 export const conversations = pgTable("conversations", {

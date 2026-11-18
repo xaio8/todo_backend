@@ -21,6 +21,7 @@ const pool = new Pool({
   ssl: isProduction ? { rejectUnauthorized: false } : false,
 });
 export const db = drizzle(pool);
+export { pool };
 
 export const checkConnection = async () => {
   try {

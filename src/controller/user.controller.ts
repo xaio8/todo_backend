@@ -2,7 +2,9 @@ import { Request, Response, NextFunction } from "express";
 import { UserService } from "../services/user.service.js";
 import { AppError } from "../utils/AppError.js";
 import { userRoleEnum } from "../db/schema.js";
-import { ApiResponse, PaginationResult, SafeUser } from "../types/index.js";
+import { ApiResponse, SafeUser } from "../types/index.js";
+import { searchUserSchema } from "../validators/user.validator.js";
+import { safeParse } from "zod";
 
 //! FOR ADMIN
 //* get all users
@@ -110,6 +112,28 @@ export const updateUserById = async (
       con: true,
       message: "User update successfully",
       data: updatedUser,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const searchUsers = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const id = req.user?.id;
+    if (!id) {
+      return next(new AppError("User ID is required", 400));
+    }
+    const { q, limit } = req.query as unknown as { q: string; limit: number };
+    const result = await UserService.searchUsers(q, limit, id);
+    return res.status(200).json({
+      con: true,
+      message: "Search users successfully",
+      data: result,
     });
   } catch (error) {
     next(error);

@@ -8,6 +8,8 @@ export const createTodoSchema = z.object({
   dueDate: z.iso.datetime().nullable().optional(),
   scheduledAt: z.iso.datetime().nullable().optional(),
   isAllDay: z.boolean().optional(),
+  // ISO datetime strings - one reminder per entry
+  remindAt: z.array(z.iso.datetime()).optional(),
 });
 
 export const updateTodoSchema = createTodoSchema.partial();

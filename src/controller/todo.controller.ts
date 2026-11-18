@@ -4,6 +4,7 @@ import { todos } from "../db/schema.js";
 import { AppError } from "../utils/AppError.js";
 import { and, eq } from "drizzle-orm";
 import { TodoService } from "../services/todo.service.js";
+import ReminderService from "../services/reminder.service.js";
 
 // get todos by date
 export const getTodayTodos = async (
@@ -72,7 +73,8 @@ export const createTodo = async (
 ) => {
   try {
     const userId = req.user?.id;
-    const createTodo = req.body;
+    // remindAt is not a todos column - it becomes rows in the reminders table
+    const { remindAt, ...todoFields } = req.body;
 
     if (!userId) {
       return next(new AppError("User ID are required", 400));
@@ -82,13 +84,21 @@ export const createTodo = async (
       .insert(todos)
       .values({
         userId,
-        ...createTodo,
-        dueDate: createTodo.dueDate ? new Date(createTodo.dueDate) : null,
-        scheduledAt: createTodo.scheduledAt
-          ? new Date(createTodo.scheduledAt)
+        ...todoFields,
+        dueDate: todoFields.dueDate ? new Date(todoFields.dueDate) : null,
+        scheduledAt: todoFields.scheduledAt
+          ? new Date(todoFields.scheduledAt)
           : null,
       })
       .returning();
+
+    if (remindAt?.length) {
+      await ReminderService.replaceForTodo(
+        newTodo[0].id,
+        userId,
+        remindAt.map((d: string) => new Date(d)),
+      );
+    }
 
     res.status(201).json({
       con: true,
@@ -109,25 +119,16 @@ export const updateTodo = async (
   try {
     const { id } = req.params;
     const userId = req.user?.id;
-    // const validation = req.body;
-
-    // if (!validation.success) {
-    //   return res.status(400).json({
-    //     con: false,
-    //     message: "validation failed",
-    //     error: validation.error,
-    //   });
-    // }
-
-    const validatedData = req.body;
+    // remindAt is not a todos column - it becomes rows in the reminders table
+    const { remindAt, ...todoFields } = req.body;
 
     const [updatedTodo] = await db
       .update(todos)
       .set({
-        ...validatedData,
-        dueDate: validatedData.dueDate ? new Date(validatedData.dueDate) : null,
-        scheduledAt: validatedData.scheduledAt
-          ? new Date(validatedData.scheduledAt)
+        ...todoFields,
+        dueDate: todoFields.dueDate ? new Date(todoFields.dueDate) : null,
+        scheduledAt: todoFields.scheduledAt
+          ? new Date(todoFields.scheduledAt)
           : null,
         updatedAt: new Date(),
       })
@@ -138,6 +139,15 @@ export const updateTodo = async (
 
     if (!updatedTodo) {
       return next(new AppError("Todo not found", 404));
+    }
+
+    // empty array clears pending reminders - undefined leaves them untouched
+    if (remindAt !== undefined) {
+      await ReminderService.replaceForTodo(
+        updatedTodo.id,
+        userId as string,
+        remindAt.map((d: string) => new Date(d)),
+      );
     }
 
     res.status(200).json({

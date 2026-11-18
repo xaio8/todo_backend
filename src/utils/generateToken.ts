@@ -14,7 +14,7 @@ export const generateAccessToken = (user: User): string => {
   return jwt.sign(
     { userId: user.id, role: user.role },
     process.env.JWT_ACCESS_SECRET as string,
-    { expiresIn: "15m" },
+    { expiresIn: "30m" },
   );
 };
 

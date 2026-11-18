@@ -57,6 +57,13 @@
       "when": 1779286216815,
       "tag": "0007_giant_zaladane",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1787675058977,
+      "tag": "0008_bored_nitro",
+      "breakpoints": true
     }
   ]
 }

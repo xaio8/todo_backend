@@ -4,12 +4,21 @@ import {
   roleBasedAccess,
 } from "../middleware/protectedRoute.js";
 import * as userController from "../controller/user.controller.js";
-import { validate } from "../middleware/validate.js";
-import { updateUserSchema } from "../validators/user.validator.js";
+import { validate, validateQuery } from "../middleware/validate.js";
+import {
+  searchUserSchema,
+  updateUserSchema,
+} from "../validators/user.validator.js";
 
 const userRouter = Router();
 
 userRouter.use(protectedRoute);
+userRouter.get(
+  "/search",
+  validateQuery(searchUserSchema),
+  roleBasedAccess("admin", "user"),
+  userController.searchUsers,
+);
 userRouter.get(
   "/:id",
   roleBasedAccess("admin", "user"),

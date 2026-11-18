@@ -5,6 +5,7 @@ import {
 } from "../middleware/socketAuth.js";
 import { ChatService } from "../services/chat.service.js";
 import OnlineUsersService from "../services/onlineUsers.service.js";
+import { setSocketServer } from "./ioInstance.js";
 import {
   DeleteMessagePayload,
   EditMessagePayload,
@@ -14,6 +15,7 @@ import {
 } from "../types/index.js";
 
 export const registerChatHandlers = (io: Server) => {
+  setSocketServer(io);
   io.use(authenticateSocket);
 
   io.on("connection", (socket) => {
